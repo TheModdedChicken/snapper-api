@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { Snowflake } from 'nodejs-snowflake';
 import { WSBus } from "..";
+import { IRoomMessage } from "../utility/interfaces";
 
 const RoomRouter = Router();
 
@@ -65,18 +66,20 @@ RoomRouter.post('/:id/messages', rAsync(async (req, res) => {
 }))
 
 // Messages
-RoomRouter.delete('/:id/messages/:mid', rAsync(async (req, res) => {
+RoomRouter.delete('/:room_id/messages/:message_id/delete', rAsync(async (req, res) => {
   if (!req.session.id) return res.status(401).send({message: "Invalid Session Token", code: "invalidSession"});
 
   const user = await UserModel.findOne({ id: req.session.id }).exec();
   if (!user) return res.status(401).send({message: "Invalid Session Token", code: "invalidSession"});
-  if (!user.rooms.includes(req.params.id)) return res.status(404).send({message: "You are not a member of this room", code: "notMemberOfRoom"});
+  if (!user.rooms.includes(req.params.room_id)) return res.status(404).send({message: "You are not a member of this room", code: "notMemberOfRoom"});
 
-  const room = await RoomModel.findOne({ id: req.params.id }).exec();
+  const room = await RoomModel.findOne({ id: req.params.room_id }).exec();
   if (!room) return res.status(404).send({message: "Room not found", code: "invalidRoom"});
 
-  if (!req.body.body) return res.status(401).send({message: "Invalid Message Body", code: "messageBodyInvalid"});
-  await CreateMessage(room.id, req.session.id, req.body.body)
+  var message: IRoomMessage = room.messages.find((m :IRoomMessage) => m.id === req.params.message_id);
+  if (!message) return res.status(401).send({message: "Message not found", code: "invalidMessage"});
+  if (message.author !== user.id) return res.status(401).send({message: "You aren't the author of this message", code: "notAuthorOfMessage"});
+  await DeleteMessage(room.id, message.id)
 
   return res.status(200).send({
     message: "Created message successfully"
@@ -171,6 +174,15 @@ async function CreateMessage(roomID: string, userID: string, body: string) {
   }
 
   return messageData;
+}
+
+async function DeleteMessage(room_id: string, message_id: string) {
+  const room = await RoomModel.findOneAndUpdate({ id: room_id }, { $pull: { messages: { $all: [ { id: message_id } ] } } }).exec()
+  for (const member of room.members) {
+    try {
+      WSBus.send(member, {status: 200, code: "deletedMessage", body: {id: message_id}})
+    } catch (err) {}
+  }
 }
 
 async function CreateRoom (user: any, name: string, password?: string, isPublic = false) {

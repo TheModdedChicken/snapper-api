@@ -128,3 +128,5 @@ dist
 
 # Custom
 .REST
+yarn.lock
+package.lock
