@@ -19,6 +19,7 @@
     "http-errors": "^2.0.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.2.4",
+    "node": "14",
     "nodejs-snowflake": "^2.0.0",
     "pino": "^7.8.0",
     "pino-http": "^6.6.0",
