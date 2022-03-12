@@ -12,8 +12,6 @@ import { RoomRoute, TestRoute, UserRoute } from './routes';
 import WebsocketBus from './classes/WebsocketBus';
 config()
 
-// https://github.com/netzwerg/typescript-websocket-example/blob/master/typescript-websocket-server/src/server.ts
-
 mongoose.connect(process.env.DB_CONN_SECRET || "")
 
 const app = express();
