@@ -35,6 +35,10 @@ if (process.argv.includes("--dev")) app.use(TestRoute.path, TestRoute.router)
 app.use(UserRoute.path, UserRoute.router)
 app.use(RoomRoute.path, RoomRoute.router)
 
+app.all('/ping', (req, res) => {
+  return res.status(200).send('pong')
+})
+
 server.listen(process.env.PORT || 5449, () => {
   console.log(`Server started on port ${(server.address() as AddressInfo).port}`);
 });
